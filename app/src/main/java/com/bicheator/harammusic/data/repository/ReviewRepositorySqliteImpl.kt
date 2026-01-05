@@ -16,29 +16,42 @@ class ReviewRepositorySqliteImpl(
             val now = System.currentTimeMillis()
             val db = dbProvider()
 
-            // UPSERT por (user_id, content_id, content_type)
-            db.execSQL(
+            val updatedRows = db.compileStatement(
                 """
-                INSERT INTO reviews (id, user_id, content_id, content_type, rating, text, created_at, updated_at, status, original_text)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'VISIBLE', NULL)
-                ON CONFLICT(user_id, content_id, content_type)
-                DO UPDATE SET
-                    rating=excluded.rating,
-                    text=excluded.text,
-                    updated_at=excluded.updated_at,
-                    status='VISIBLE';
-                """.trimIndent(),
-                arrayOf(
-                    review.id,
-                    review.userId,
-                    review.contentId,
-                    review.contentType.name,
-                    review.rating,
-                    review.text,
-                    review.createdAt,
-                    now
+                UPDATE reviews
+                SET rating = ?, text = ?, updated_at = ?, status = 'VISIBLE'
+                WHERE user_id = ? AND content_id = ? AND content_type = ?
+                """.trimIndent()
+            ).apply {
+                bindLong(1, review.rating.toLong())
+                bindString(2, review.text ?: "")
+                bindLong(3, now)
+                bindString(4, review.userId)
+                bindString(5, review.contentId)
+                bindString(6, review.contentType.name)
+            }.executeUpdateDelete()
+
+            if (updatedRows == 0) {
+                db.execSQL(
+                    """
+                    INSERT INTO reviews (
+                        id, user_id, content_id, content_type,
+                        rating, text, created_at, updated_at, status, original_text
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'VISIBLE', NULL)
+                    """.trimIndent(),
+                    arrayOf(
+                        review.id,
+                        review.userId,
+                        review.contentId,
+                        review.contentType.name,
+                        review.rating,
+                        review.text,
+                        now,
+                        now
+                    )
                 )
-            )
+            }
 
             AppResult.Success(Unit)
         } catch (t: Throwable) {

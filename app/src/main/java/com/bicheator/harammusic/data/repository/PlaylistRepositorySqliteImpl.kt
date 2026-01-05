@@ -20,7 +20,7 @@ class PlaylistRepositorySqliteImpl(
         try {
             val db = dbProvider()
             val now = System.currentTimeMillis()
-            val playlistId = IdGenerator.newId()
+            val playlistId = IdGenerator.uuid()
 
             db.beginTransaction()
             try {

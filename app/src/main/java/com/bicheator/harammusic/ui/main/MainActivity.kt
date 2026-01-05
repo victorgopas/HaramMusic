@@ -11,7 +11,7 @@ import com.bicheator.harammusic.ui.navigate.Routes
 
 class MainActivity : ComponentActivity() {
 
-    private val container = AppContainer()
+    private val container by lazy { AppContainer(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

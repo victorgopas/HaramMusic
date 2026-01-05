@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.bicheator.harammusic.ui.admin.AdminScreen
 import com.bicheator.harammusic.ui.auth.LoginScreen
 import com.bicheator.harammusic.ui.auth.RegisterScreen
+import com.bicheator.harammusic.ui.main.MainScaffoldScreen
 import com.bicheator.harammusic.ui.playlist.PlaylistsScreen
 import com.bicheator.harammusic.ui.profile.ProfileScreen
 import com.bicheator.harammusic.ui.search.SearchScreen
@@ -23,8 +24,8 @@ fun AppNavGraph(
             LoginScreen(
                 onGoRegister = { navController.navigate(Routes.REGISTER) },
                 onLoginSuccess = {
-                    navController.navigate(Routes.SEARCH) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.MAIN) { inclusive = true }
                     }
                 }
             )
@@ -41,6 +42,12 @@ fun AppNavGraph(
             SearchScreen(
                 onGoPlaylists = { navController.navigate(Routes.PLAYLISTS) },
                 onGoProfile = { navController.navigate(Routes.PROFILE) },
+                onGoAdmin = { navController.navigate(Routes.ADMIN) }
+            )
+        }
+
+        composable(Routes.MAIN) {
+            MainScaffoldScreen(
                 onGoAdmin = { navController.navigate(Routes.ADMIN) }
             )
         }

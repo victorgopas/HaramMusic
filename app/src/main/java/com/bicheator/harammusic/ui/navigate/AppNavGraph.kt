@@ -2,9 +2,9 @@ package com.bicheator.harammusic.ui.navigate
 
 
 import androidx.compose.runtime.Composable
-import androidx.navigate.NavHostController
-import androidx.navigate.compose.NavHost
-import androidx.navigate.compose.composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import com.bicheator.harammusic.ui.admin.AdminScreen
 import com.bicheator.harammusic.ui.auth.LoginScreen
 import com.bicheator.harammusic.ui.auth.RegisterScreen

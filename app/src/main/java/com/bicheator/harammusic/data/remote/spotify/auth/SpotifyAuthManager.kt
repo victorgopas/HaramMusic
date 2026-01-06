@@ -7,12 +7,18 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import net.openid.appauth.*
 import kotlin.coroutines.resume
-
+import android.content.Intent
 class SpotifyAuthManager(
     private val context: Context,
     private val clientId: String,
     private val redirectUri: Uri
 ) {
+
+
+    fun getAuthorizationIntent(request: AuthorizationRequest): Intent {
+        return authService.getAuthorizationRequestIntent(request)
+    }
+
     private val authService = AuthorizationService(context)
 
     // Spotify endpoints (OAuth)

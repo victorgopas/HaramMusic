@@ -14,7 +14,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.bicheator.harammusic"
+        manifestPlaceholders["redirectSchemeName"] = "com.bicheator.harammusic"
+        manifestPlaceholders["redirectHostName"] = "callback"
+        manifestPlaceholders["redirectPathPattern"] = ".*"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

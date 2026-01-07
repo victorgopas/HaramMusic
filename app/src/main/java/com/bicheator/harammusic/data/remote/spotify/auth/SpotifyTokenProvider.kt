@@ -22,13 +22,23 @@ class SpotifyTokenProvider(
         when (val refreshed = authManager.refreshToken(refresh)) {
             is AppResult.Success -> {
                 val newAccess = refreshed.data.accessToken
-                val newRefresh = refreshed.data.refreshToken ?: refresh
-                val expiresAt = System.currentTimeMillis() + (refreshed.data.accessTokenExpirationTime ?: 0L)
+                    ?: return@runBlocking AppResult.Error("Spotify no devolvió access token")
 
-                tokenStore.save(newAccess, newRefresh, expiresAt)
+                val newRefresh = refreshed.data.refreshToken ?: refresh
+                val expiresAt = refreshed.data.accessTokenExpirationTime
+                    ?: (System.currentTimeMillis() + 3600_000) // fallback 1h
+
+                tokenStore.save(
+                    accessToken = newAccess,
+                    refreshToken = newRefresh,
+                    expiresAtMs = expiresAt
+                )
+
                 AppResult.Success(newAccess)
             }
+
             is AppResult.Error -> refreshed
         }
     }
 }
+

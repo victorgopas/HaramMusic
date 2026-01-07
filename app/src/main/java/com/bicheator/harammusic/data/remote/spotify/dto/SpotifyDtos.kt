@@ -26,11 +26,18 @@ data class AlbumDto(
     val images: List<ImageDto>
 )
 
-data class ArtistDto(
-    val id: String,
-    val name: String
-)
 
 data class ImageDto(
     val url: String
+)
+data class SpotifySearchMultiResponseDto(
+    @Json(name="tracks") val tracks: TracksDto? = null,
+    @Json(name="artists") val artists: ArtistsDto? = null
+)
+
+data class ArtistItemDto(
+    val id: String,
+    val name: String,
+    val uri: String,
+    val images: List<ImageDto> = emptyList()
 )

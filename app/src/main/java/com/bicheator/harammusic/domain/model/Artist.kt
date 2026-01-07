@@ -3,5 +3,6 @@ package com.bicheator.harammusic.domain.model
 data class Artist(
     val id: String,
     val name: String,
-    val genres: List<String> = emptyList()
+    val imageUrl: String? = null,
+    val spotifyUri: String? = null
 )

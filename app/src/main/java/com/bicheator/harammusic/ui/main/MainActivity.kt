@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val start = if (container.sessionManager.isLoggedIn()) Routes.SEARCH else Routes.LOGIN
+        val start = if (container.sessionManager.isLoggedIn()) Routes.EXPLORE else Routes.LOGIN
 
         setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {

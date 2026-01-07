@@ -1,6 +1,5 @@
 package com.bicheator.harammusic.ui.navigate
 
-
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -9,9 +8,9 @@ import com.bicheator.harammusic.ui.admin.AdminScreen
 import com.bicheator.harammusic.ui.auth.LoginScreen
 import com.bicheator.harammusic.ui.auth.RegisterScreen
 import com.bicheator.harammusic.ui.main.MainScaffoldScreen
-import com.bicheator.harammusic.ui.playlist.PlaylistsScreen
-import com.bicheator.harammusic.ui.profile.ProfileScreen
-import com.bicheator.harammusic.ui.search.SearchScreen
+import com.bicheator.harammusic.ui.main.LocalAppContainer
+import androidx.compose.runtime.collectAsState
+import com.bicheator.harammusic.domain.model.Role
 
 @Composable
 fun AppNavGraph(
@@ -25,7 +24,8 @@ fun AppNavGraph(
                 onGoRegister = { navController.navigate(Routes.REGISTER) },
                 onLoginSuccess = {
                     navController.navigate(Routes.MAIN) {
-                        popUpTo(Routes.MAIN) { inclusive = true }
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -38,22 +38,26 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.SEARCH) {
-            SearchScreen(
-                onGoPlaylists = { navController.navigate(Routes.PLAYLISTS) },
-                onGoProfile = { navController.navigate(Routes.PROFILE) },
-                onGoAdmin = { navController.navigate(Routes.ADMIN) }
-            )
-        }
-
         composable(Routes.MAIN) {
             MainScaffoldScreen(
-                onGoAdmin = { navController.navigate(Routes.ADMIN) }
+                onGoAdmin = { navController.navigate(Routes.ADMIN) },
+                onGoLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
-        composable(Routes.PLAYLISTS) { PlaylistsScreen() }
-        composable(Routes.PROFILE) { ProfileScreen() }
-        composable(Routes.ADMIN) { AdminScreen() }
+        composable(Routes.ADMIN) {
+            val container = LocalAppContainer.current
+            val userState = container.sessionManager.currentUser.collectAsState()
+            val user = userState.value
+            val isAdmin = user?.role == Role.ADMIN
+            if (isAdmin) AdminScreen() else MainScaffoldScreen(onGoAdmin = {}, onGoLogin = {})
+
+        }
+
     }
 }

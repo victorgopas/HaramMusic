@@ -9,6 +9,8 @@ import com.spotify.protocol.types.PlayerState
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class SpotifyPlayerRemoteDataSource(
     private val context: Context,
@@ -17,7 +19,9 @@ class SpotifyPlayerRemoteDataSource(
 ) {
     private var appRemote: SpotifyAppRemote? = null
 
-    fun connect(): AppResult<Unit> {
+    fun isConnected(): Boolean = appRemote != null
+
+    suspend fun connect(): AppResult<Unit> = suspendCancellableCoroutine { cont ->
         val params = ConnectionParams.Builder(clientId)
             .setRedirectUri(redirectUri)
             .showAuthView(true)
@@ -26,12 +30,22 @@ class SpotifyPlayerRemoteDataSource(
         SpotifyAppRemote.connect(context, params, object : Connector.ConnectionListener {
             override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
                 appRemote = spotifyAppRemote
+                if (cont.isActive) cont.resume(AppResult.Success(Unit))
             }
+
             override fun onFailure(throwable: Throwable) {
                 appRemote = null
+                if (cont.isActive) cont.resume(AppResult.Error("No se pudo conectar con Spotify App Remote", throwable))
             }
         })
-        return AppResult.Success(Unit)
+
+        cont.invokeOnCancellation {
+            // no-op
+        }
+    }
+
+    suspend fun connectIfNeeded(): AppResult<Unit> {
+        return if (isConnected()) AppResult.Success(Unit) else connect()
     }
 
     fun disconnect() {

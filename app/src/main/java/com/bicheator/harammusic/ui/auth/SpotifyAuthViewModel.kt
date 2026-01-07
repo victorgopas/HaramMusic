@@ -44,11 +44,20 @@ class SpotifyAuthViewModel(
     }
 
     fun handleAuthResult(data: Intent?) {
-        val resp = AuthorizationResponse.fromIntent(data ?: return)
-        val ex = AuthorizationException.fromIntent(data)
+        if (data == null) {
+            _state.value = _state.value.copy(loading = false, error = "No se recibió respuesta de Spotify")
+            return
+        }
 
+        val ex = AuthorizationException.fromIntent(data)
         if (ex != null) {
             _state.value = _state.value.copy(loading = false, error = "Login Spotify cancelado o falló")
+            return
+        }
+
+        val resp = AuthorizationResponse.fromIntent(data)
+        if (resp == null) {
+            _state.value = _state.value.copy(loading = false, error = "Respuesta de autorización inválida")
             return
         }
 
@@ -61,13 +70,14 @@ class SpotifyAuthViewModel(
                 is AppResult.Success -> {
                     val tokenResponse = tokenRes.data
                     val access = tokenResponse.accessToken
-                    val refresh = tokenResponse.refreshToken
-                    val expiresAtMs = tokenResponse.accessTokenExpirationTime ?: (System.currentTimeMillis() + 3600_000)
+                        ?: run {
+                            _state.value = SpotifyAuthUiState(connected = false, loading = false, error = "Spotify no devolvió access token")
+                            return@launch
+                        }
 
-                    if (access == null) {
-                        _state.value = SpotifyAuthUiState(connected = false, loading = false, error = "Spotify no devolvió access token")
-                        return@launch
-                    }
+                    val refresh = tokenResponse.refreshToken
+                    val expiresAtMs = tokenResponse.accessTokenExpirationTime
+                        ?: (System.currentTimeMillis() + 3600_000)
 
                     tokenStore.save(
                         accessToken = access,

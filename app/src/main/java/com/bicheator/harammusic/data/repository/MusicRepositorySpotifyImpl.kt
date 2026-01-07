@@ -11,6 +11,41 @@ class MusicRepositorySpotifyImpl(
     private val api: SpotifyApiService
 ) : MusicRepository {
 
+    override suspend fun getExplore(): AppResult<Pair<List<Song>, List<Artist>>> = try {
+        val seed = listOf("bad bunny", "rosalia", "dua lipa", "drake").random()
+
+        val tracksRes = api.searchTracks(query = seed, limit = 12)
+        val artistsRes = api.searchArtists(query = seed, limit = 8)
+
+        val songs = tracksRes.tracks.items.map { t ->
+            Song(
+                id = t.id,
+                title = t.name,
+                artistId = t.artists.firstOrNull()?.id ?: "",
+                albumId = t.album.id,
+                previewUrl = t.previewUrl,
+                artistName = t.artists.firstOrNull()?.name,
+                albumName = t.album.name,
+                imageUrl = t.album.images.firstOrNull()?.url,
+                spotifyUri = t.uri,
+                durationMs = t.durationMs
+            )
+        }
+
+        val artists = artistsRes.artists.items.map { a ->
+            Artist(
+                id = a.id,
+                name = a.name,
+                imageUrl = a.images.firstOrNull()?.url,
+                spotifyUri = a.uri
+            )
+        }
+
+        AppResult.Success(songs to artists)
+    } catch (e: Exception) {
+        AppResult.Error("Error cargando explorar", e)
+    }
+
     override suspend fun searchSongs(query: String): AppResult<List<Song>> = try {
         val res = api.searchTracks(query = query)
 
@@ -21,7 +56,6 @@ class MusicRepositorySpotifyImpl(
                 artistId = t.artists.firstOrNull()?.id ?: "",
                 albumId = t.album.id,
                 previewUrl = t.previewUrl,
-
                 artistName = t.artists.firstOrNull()?.name,
                 albumName = t.album.name,
                 imageUrl = t.album.images.firstOrNull()?.url,
@@ -35,9 +69,15 @@ class MusicRepositorySpotifyImpl(
         AppResult.Error("Error buscando en Spotify", e)
     }
 
-    // De momento no lo usamos para “search canciones”, pero para no romper interface:
-    override suspend fun searchAlbums(query: String) = AppResult.Success(emptyList<Album>())
-    override suspend fun searchArtists(query: String) = AppResult.Success(emptyList<Artist>())
-    override suspend fun getSongDetail(id: String) = AppResult.Error("No implementado aún")
-    override suspend fun getAlbumDetail(id: String) = AppResult.Error("No implementado aún")
+    override suspend fun searchAlbums(query: String): AppResult<List<Album>> =
+        AppResult.Success(emptyList())
+
+    override suspend fun searchArtists(query: String): AppResult<List<Artist>> =
+        AppResult.Success(emptyList())
+
+    override suspend fun getSongDetail(id: String): AppResult<Song> =
+        AppResult.Error("No implementado aún")
+
+    override suspend fun getAlbumDetail(id: String): AppResult<Album> =
+        AppResult.Error("No implementado aún")
 }

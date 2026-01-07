@@ -10,4 +10,6 @@ interface MusicRepository {
 
     suspend fun getSongDetail(id: String): AppResult<Song>
     suspend fun getAlbumDetail(id: String): AppResult<Album>
+    suspend fun getExplore(): AppResult<Pair<List<Song>, List<Artist>>>
+
 }

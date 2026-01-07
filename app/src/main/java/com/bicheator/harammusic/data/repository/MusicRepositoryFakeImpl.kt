@@ -8,9 +8,10 @@ import kotlinx.coroutines.delay
 class MusicRepositoryFakeImpl : MusicRepository {
 
     private val artists = listOf(
-        Artist("a1", "Bad Bunny", listOf("reggaeton")),
-        Artist("a2", "Rosalía", listOf("pop", "flamenco")),
-        Artist("a3", "Dua Lipa", listOf("pop"))
+        Artist(id = "a1", name = "Bad Bunny"),
+        Artist(id = "a2", name = "ROSALÍA"),
+        Artist(id = "a3", name = "Dua Lipa"),
+        Artist(id = "a4", name = "Drake")
     )
 
     private val albums = listOf(
@@ -54,4 +55,7 @@ class MusicRepositoryFakeImpl : MusicRepository {
         return albums.find { it.id == id }?.let { AppResult.Success(it) }
             ?: AppResult.Error("Álbum no encontrado")
     }
+
+    override suspend fun getExplore(): AppResult<Pair<List<Song>, List<Artist>>> =
+        AppResult.Success(songs to artists)
 }

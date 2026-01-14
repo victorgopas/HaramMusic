@@ -18,4 +18,10 @@ class SessionManager {
     }
 
     fun isLoggedIn(): Boolean = _currentUser.value != null
+
+    fun getUserIdOrNull(): String? = _currentUser.value?.id
+
+    fun setCurrentUser(user: User) {
+        _currentUser.value = user
+    }
 }

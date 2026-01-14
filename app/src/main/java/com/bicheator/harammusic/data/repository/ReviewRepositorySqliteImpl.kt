@@ -2,7 +2,6 @@ package com.bicheator.harammusic.data.repository
 
 import android.database.sqlite.SQLiteDatabase
 import com.bicheator.harammusic.core.result.AppResult
-import com.bicheator.harammusic.domain.model.ContentType
 import com.bicheator.harammusic.domain.model.Review
 import com.bicheator.harammusic.domain.repository.ReviewRepository
 import kotlinx.coroutines.Dispatchers
@@ -11,40 +10,36 @@ import kotlinx.coroutines.withContext
 class ReviewRepositorySqliteImpl(
     private val dbProvider: () -> SQLiteDatabase
 ) : ReviewRepository {
-    override suspend fun rateContent(review: Review): AppResult<Unit> = withContext(Dispatchers.IO) {
+
+    override suspend fun rateSong(review: Review): AppResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val now = System.currentTimeMillis()
             val db = dbProvider()
+            val now = System.currentTimeMillis()
 
             val updatedRows = db.compileStatement(
                 """
                 UPDATE reviews
-                SET rating = ?, text = ?, updated_at = ?, status = 'VISIBLE'
-                WHERE user_id = ? AND content_id = ? AND content_type = ?
+                SET rating = ?, text = ?, updated_at = ?
+                WHERE user_id = ? AND song_id = ?
                 """.trimIndent()
             ).apply {
-                bindLong(1, review.rating.toLong())
-                bindString(2, review.text ?: "")
+                bindDouble(1, review.rating)
+                if (review.text != null) bindString(2, review.text) else bindNull(2)
                 bindLong(3, now)
                 bindString(4, review.userId)
-                bindString(5, review.contentId)
-                bindString(6, review.contentType.name)
+                bindString(5, review.songId)
             }.executeUpdateDelete()
 
             if (updatedRows == 0) {
                 db.execSQL(
                     """
-                    INSERT INTO reviews (
-                        id, user_id, content_id, content_type,
-                        rating, text, created_at, updated_at, status, original_text
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'VISIBLE', NULL)
+                    INSERT INTO reviews (id, user_id, song_id, rating, text, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                     arrayOf(
                         review.id,
                         review.userId,
-                        review.contentId,
-                        review.contentType.name,
+                        review.songId,
                         review.rating,
                         review.text,
                         now,
@@ -55,21 +50,22 @@ class ReviewRepositorySqliteImpl(
 
             AppResult.Success(Unit)
         } catch (t: Throwable) {
-            AppResult.Error("No se pudo guardar la valoración", t)
+            AppResult.Error("No se pudo guardar la reseña", t)
         }
     }
 
-    override suspend fun getReviews(contentId: String): AppResult<List<Review>> = withContext(Dispatchers.IO) {
+    override suspend fun getReviewsForSong(songId: String): AppResult<List<Review>> = withContext(Dispatchers.IO) {
         try {
             val db = dbProvider()
             val cursor = db.rawQuery(
                 """
-                SELECT id, user_id, content_id, content_type, rating, text, created_at
-                FROM reviews
-                WHERE content_id = ? AND status != 'DELETED'
-                ORDER BY created_at DESC
+                SELECT r.id, r.user_id, r.song_id, r.rating, r.text, r.created_at, u.display_name
+                FROM reviews r
+                LEFT JOIN users u ON u.id = r.user_id
+                WHERE r.song_id = ?
+                ORDER BY r.created_at DESC
                 """.trimIndent(),
-                arrayOf(contentId)
+                arrayOf(songId)
             )
 
             val out = buildList {
@@ -79,19 +75,20 @@ class ReviewRepositorySqliteImpl(
                             Review(
                                 id = it.getString(0),
                                 userId = it.getString(1),
-                                contentId = it.getString(2),
-                                contentType = ContentType.valueOf(it.getString(3)),
-                                rating = it.getInt(4),
-                                text = it.getString(5),
-                                createdAt = it.getLong(6)
+                                songId = it.getString(2),
+                                rating = it.getDouble(3),
+                                text = it.getString(4),
+                                createdAt = it.getLong(5),
+                                userDisplayName = it.getString(6)
                             )
                         )
                     }
                 }
             }
+
             AppResult.Success(out)
         } catch (t: Throwable) {
-            AppResult.Error("No se pudieron cargar reseñas.", t)
+            AppResult.Error("No se pudieron cargar las reseñas", t)
         }
     }
 }

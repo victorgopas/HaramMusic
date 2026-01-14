@@ -1,16 +1,16 @@
 package com.bicheator.harammusic.ui.navigate
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.bicheator.harammusic.domain.model.Role
 import com.bicheator.harammusic.ui.admin.AdminScreen
 import com.bicheator.harammusic.ui.auth.LoginScreen
 import com.bicheator.harammusic.ui.auth.RegisterScreen
-import com.bicheator.harammusic.ui.main.MainScaffoldScreen
 import com.bicheator.harammusic.ui.main.LocalAppContainer
-import androidx.compose.runtime.collectAsState
-import com.bicheator.harammusic.domain.model.Role
+import com.bicheator.harammusic.ui.main.MainScaffoldScreen
 
 @Composable
 fun AppNavGraph(

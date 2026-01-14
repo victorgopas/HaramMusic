@@ -5,10 +5,16 @@ object Routes {
     const val REGISTER = "register"
     const val MAIN = "main"
 
-    // tabs
-    const val HOME = "home"
-    const val EXPLORE = "explore"
+    const val SONGS = "songs"
+    const val PLAYER = "player"
+    const val CONTENT = "content"
     const val PROFILE = "profile"
+    const val PLAYLISTS = "playlists"
+    const val PLAYLIST_DETAIL = "playlist_detail/{playlistId}"
 
     const val ADMIN = "admin"
+
+    const val ARTIST_DETAIL = "artist_detail/{artistId}"
+    const val ALBUM_DETAIL = "album_detail/{albumId}"
+    const val SONG_DETAIL = "song_detail/{songId}"
 }

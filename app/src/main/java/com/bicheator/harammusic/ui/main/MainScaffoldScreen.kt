@@ -1,120 +1,142 @@
 package com.bicheator.harammusic.ui.main
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.*
-import com.bicheator.harammusic.ui.explore.ExploreScreen
-import com.bicheator.harammusic.ui.home.HomeScreen
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.bicheator.harammusic.ui.content.ContentScreen
 import com.bicheator.harammusic.ui.navigate.Routes
-import com.bicheator.harammusic.ui.player.MiniPlayerBar
+import com.bicheator.harammusic.ui.player.PlayerScreen
+import com.bicheator.harammusic.ui.playlist.PlaylistDetailScreen
+import com.bicheator.harammusic.ui.playlist.PlaylistsScreen
 import com.bicheator.harammusic.ui.profile.ProfileScreen
+import com.bicheator.harammusic.ui.songs.SongsScreen
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun MainScaffoldScreen(
     onGoAdmin: () -> Unit,
     onGoLogin: () -> Unit
 ) {
+    val nav = rememberNavController()
+    val currentRoute by nav.currentBackStackEntryAsState()
+
     val container = LocalAppContainer.current
-    val user by container.sessionManager.currentUser.collectAsState()
-    val isAdmin = user?.role?.name == "ADMIN"
+    val importVm = remember(container) { com.bicheator.harammusic.data.library.LibraryImportViewModel(container) }
 
-    val tabNav = rememberNavController()
-    val currentRoute = tabNav.currentBackStackEntryAsState().value?.destination?.route
-
-    val playerState by container.playerViewModel.state.collectAsState()
+    LaunchedEffect(Unit) {
+        importVm.autoImportIfPossible()
+    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (currentRoute) {
-                            Routes.HOME -> "Inicio"
-                            Routes.EXPLORE -> "Explorar"
-                            Routes.PROFILE -> "Perfil"
-                            else -> "Haram Music"
+        bottomBar = {
+            BottomNavBar(
+                currentRoute = currentRoute?.destination?.route,
+                onNavigate = { route ->
+                    val current = nav.currentBackStackEntry?.destination?.route
+                    if (current == route) return@BottomNavBar
+
+                    nav.navigate(route) {
+                        launchSingleTop = true
+
+                        popUpTo(nav.graph.findStartDestination().id) {
+                            saveState = false
                         }
-                    )
-                },
-                actions = {
-                    if (isAdmin == true) {
-                        TextButton(onClick = onGoAdmin) { Text("Admin") }
+
+                        restoreState = false
                     }
                 }
             )
-        },
-        bottomBar = {
-            Column {
-                // ✅ MiniPlayer encima del bottom nav
-                MiniPlayerBar(
-                    state = playerState,
-                    onToggle = { container.playerViewModel.togglePlayPause() }
-                )
-
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.HOME,
-                        onClick = {
-                            tabNav.navigate(Routes.HOME) {
-                                launchSingleTop = true
-                                popUpTo(Routes.HOME) { inclusive = false }
-                            }
-                        },
-                        label = { Text("Inicio") },
-                        icon = {}
-                    )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.EXPLORE,
-                        onClick = { tabNav.navigate(Routes.EXPLORE) { launchSingleTop = true } },
-                        label = { Text("Explorar") },
-                        icon = {}
-                    )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.PROFILE,
-                        onClick = { tabNav.navigate(Routes.PROFILE) { launchSingleTop = true } },
-                        label = { Text("Perfil") },
-                        icon = {}
-                    )
-                }
-            }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Column(Modifier.padding(padding)){
             NavHost(
-                navController = tabNav,
-                startDestination = Routes.HOME
+                navController = nav,
+                startDestination = Routes.SONGS
             ) {
-                composable(Routes.HOME) {
-                    HomeScreen(
-                        onCreatePlaylist = {
-                            // luego: navegar a crear playlist
-                        }
+                composable(Routes.SONGS) {
+                    SongsScreen(
+                        onOpenPlaylists = { nav.navigate(Routes.PLAYLISTS) },
+                        onOpenSongDetail = { id -> nav.navigate("song_detail/$id") }
                     )
                 }
-
-                composable(Routes.EXPLORE) {
-                    ExploreScreen(
-                        onGoAdmin = onGoAdmin,
-                        onOpenSongDetail = {
-                            // siguiente paso: detalle canción
-                        }
-                    )
-                }
-
+                composable(Routes.PLAYER) { PlayerScreen() }
+                composable(Routes.CONTENT) { ContentScreen(
+                    onOpenArtist = { id -> nav.navigate("artist_detail/$id") },
+                    onOpenAlbum = { id -> nav.navigate("album_detail/$id") },
+                    onOpenSong = { id -> nav.navigate("song_detail/$id") }
+                ) }
                 composable(Routes.PROFILE) {
                     ProfileScreen(
-                        onLogout = {
-                            container.sessionManager.clear()
-                            onGoLogin()
-                        },
-                        onDisconnectSpotify = {
-                            container.spotifyTokenStore.clear()
-                        }
+                        onLogout = onGoLogin,
+                        onGoAdmin = onGoAdmin
                     )
                 }
+                composable(Routes.PLAYLISTS) { PlaylistsScreen(
+                    onBack = { nav.popBackStack()},
+                    onOpenPlaylist = { id ->
+                    nav.navigate("playlist_detail/$id")
+                }) }
+
+                composable(
+                    route = Routes.PLAYLIST_DETAIL,
+                    arguments = listOf(navArgument("playlistId") { type = NavType.StringType })
+                ) { backStack ->
+                    val playlistId = backStack.arguments?.getString("playlistId")!!
+                    PlaylistDetailScreen(
+                        playlistId = playlistId,
+                        onBack = { nav.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = Routes.ARTIST_DETAIL,
+                    arguments = listOf(navArgument("artistId") { type = NavType.StringType })
+                ) { backStack ->
+                    val artistId = backStack.arguments?.getString("artistId")!!
+                    com.bicheator.harammusic.ui.content.detail.ArtistDetailScreen(
+                        artistId = artistId,
+                        onBack = { nav.popBackStack() },
+                        onOpenAlbum = { id -> nav.navigate("album_detail/$id") },
+                        onOpenSong = { id -> nav.navigate("song_detail/$id") }
+                    )
+                }
+
+                composable(
+                    route = Routes.ALBUM_DETAIL,
+                    arguments = listOf(navArgument("albumId") { type = NavType.StringType })
+                ) { backStack ->
+                    val albumId = backStack.arguments?.getString("albumId")!!
+                    com.bicheator.harammusic.ui.content.detail.AlbumDetailScreen(
+                        albumId = albumId,
+                        onBack = { nav.popBackStack() },
+                        onOpenSong = { id -> nav.navigate("song_detail/$id") }
+                    )
+                }
+
+                composable(
+                    route = Routes.SONG_DETAIL,
+                    arguments = listOf(navArgument("songId") { type = NavType.StringType })
+                ) { backStack ->
+                    val songId = backStack.arguments?.getString("songId")!!
+                    com.bicheator.harammusic.ui.content.detail.SongDetailScreen(
+                        songId = songId,
+                        onBack = { nav.popBackStack() }
+                    )
+                }
+
+
             }
         }
     }

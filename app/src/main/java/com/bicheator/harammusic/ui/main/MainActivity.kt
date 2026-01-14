@@ -9,6 +9,7 @@ import com.bicheator.harammusic.core.di.AppContainer
 import com.bicheator.harammusic.ui.navigate.AppNavGraph
 import com.bicheator.harammusic.ui.navigate.Routes
 
+
 class MainActivity : ComponentActivity() {
 
     private val container by lazy { AppContainer(applicationContext) }
@@ -16,13 +17,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val start = if (container.sessionManager.isLoggedIn()) Routes.EXPLORE else Routes.LOGIN
+        val start = if (container.sessionManager.isLoggedIn()) Routes.MAIN else Routes.LOGIN
 
         setContent {
-            CompositionLocalProvider(LocalAppContainer provides container) {
-                val navController = rememberNavController()
+            val navController = rememberNavController()
+            val playerVm = androidx.compose.runtime.remember(container) {
+                com.bicheator.harammusic.ui.player.PlayerViewModel(container)
+            }
+
+            CompositionLocalProvider(
+                LocalAppContainer provides container,
+                com.bicheator.harammusic.ui.player.LocalPlayerViewModel provides playerVm
+            ) {
                 AppNavGraph(navController = navController, startDestination = start)
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        container.playerEngine.release()
     }
 }
